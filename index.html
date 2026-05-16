@@ -1,0 +1,3353 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de Punto de Equilibrio · Para Emprendedores Colombianos</title>
+<meta name="description" content="Herramienta educativa gratuita para calcular el punto de equilibrio de tu negocio. Diseñada para emprendedores colombianos por el Ing. Gustavo Walteros Larrotta." />
+
+<!-- Tipografías -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- SheetJS para exportar Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+/* =========================
+   TOKENS DE DISEÑO
+   ========================= */
+:root {
+  /* Paleta: verde esmeralda emprendedor + dorado finanzas */
+  --verde-900: #064e3b;
+  --verde-700: #047857;
+  --verde-600: #059669;
+  --verde-500: #10b981;
+  --verde-400: #34d399;
+  --verde-300: #6ee7b7;
+  --verde-100: #d1fae5;
+  --verde-50:  #ecfdf5;
+
+  --dorado-700: #b45309;
+  --dorado-500: #f59e0b;
+  --dorado-400: #fbbf24;
+  --dorado-100: #fef3c7;
+
+  --rojo-500: #ef4444;
+  --rojo-100: #fee2e2;
+  --azul-500: #3b82f6;
+  --azul-100: #dbeafe;
+
+  /* Neutros - tema claro por defecto */
+  --bg:        #faf8f3;
+  --bg-card:  #ffffff;
+  --bg-soft:  #f1ede4;
+  --texto:    #1c1917;
+  --texto-suave: #57534e;
+  --texto-claro: #78716c;
+  --borde:    #e7e5e4;
+  --borde-fuerte: #d6d3d1;
+
+  /* Sombras */
+  --sombra-sm: 0 1px 3px rgba(12, 67, 47, 0.06), 0 1px 2px rgba(12, 67, 47, 0.04);
+  --sombra-md: 0 4px 12px rgba(12, 67, 47, 0.08), 0 2px 4px rgba(12, 67, 47, 0.05);
+  --sombra-lg: 0 12px 32px rgba(12, 67, 47, 0.10), 0 4px 8px rgba(12, 67, 47, 0.06);
+  --sombra-xl: 0 24px 56px rgba(12, 67, 47, 0.14), 0 8px 16px rgba(12, 67, 47, 0.08);
+  --sombra-verde: 0 12px 32px rgba(16, 185, 129, 0.25);
+  --sombra-dorado: 0 8px 24px rgba(245, 158, 11, 0.30);
+
+  /* Geometría */
+  --radio-sm: 8px;
+  --radio: 14px;
+  --radio-lg: 22px;
+  --radio-xl: 32px;
+
+  /* Tipografía */
+  --display: 'Fraunces', 'Times New Roman', serif;
+  --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+
+  /* Transiciones */
+  --rapido: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --normal: 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  --lento: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  --rebote: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-tema="oscuro"] {
+  --bg:        #0c0a09;
+  --bg-card:  #1c1917;
+  --bg-soft:  #292524;
+  --texto:    #f5f5f4;
+  --texto-suave: #d6d3d1;
+  --texto-claro: #a8a29e;
+  --borde:    #292524;
+  --borde-fuerte: #44403c;
+  --verde-50: #022c22;
+  --verde-100: #064e3b;
+  --dorado-100: #451a03;
+  --rojo-100: #450a0a;
+  --azul-100: #172554;
+}
+
+/* =========================
+   RESET
+   ========================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--texto);
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+  transition: background var(--normal), color var(--normal);
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font-family: inherit; color: inherit; }
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+
+/* =========================
+   FONDO DECORATIVO
+   ========================= */
+.fondo-decorativo {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: flotar 18s ease-in-out infinite;
+}
+.blob-1 { width: 500px; height: 500px; background: var(--verde-300); top: -200px; right: -150px; }
+.blob-2 { width: 400px; height: 400px; background: var(--dorado-400); bottom: -150px; left: -100px; animation-delay: -6s; animation-duration: 22s; }
+.blob-3 { width: 350px; height: 350px; background: var(--verde-500); top: 40%; left: 50%; transform: translateX(-50%); opacity: 0.15; animation-delay: -10s; animation-duration: 25s; }
+
+[data-tema="oscuro"] .blob { opacity: 0.15; }
+
+@keyframes flotar {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -40px) scale(1.1); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+
+/* Patrón de puntos sutil */
+.fondo-decorativo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--borde) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.4;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+[data-tema="oscuro"] .fondo-decorativo::after { opacity: 0.3; }
+
+/* =========================
+   CONTENEDOR
+   ========================= */
+.contenedor {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* =========================
+   HEADER
+   ========================= */
+.barra-superior {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: color-mix(in oklab, var(--bg) 75%, transparent);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-contenido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+.logo-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--verde-500), var(--verde-700));
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 22px;
+  box-shadow: var(--sombra-verde);
+  position: relative;
+}
+.logo-icono::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.25));
+}
+.logo small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--texto-claro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.btn-tema {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  transition: all var(--rapido);
+}
+.btn-tema:hover { background: var(--verde-50); border-color: var(--verde-300); transform: translateY(-1px); }
+
+/* =========================
+   HERO
+   ========================= */
+.hero {
+  padding: 80px 0 60px;
+  text-align: center;
+  position: relative;
+}
+.hero-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--verde-50);
+  border: 1px solid var(--verde-300);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--verde-700);
+  margin-bottom: 28px;
+  animation: aparecer 0.8s var(--rebote) backwards;
+}
+.hero-etiqueta-punto {
+  width: 8px;
+  height: 8px;
+  background: var(--verde-500);
+  border-radius: 50%;
+  animation: pulso 2s ease-in-out infinite;
+}
+[data-tema="oscuro"] .hero-etiqueta { color: var(--verde-300); }
+
+@keyframes pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+.hero h1 {
+  font-size: clamp(40px, 6.5vw, 80px);
+  font-weight: 600;
+  margin-bottom: 24px;
+  animation: aparecer 0.9s ease-out 0.1s backwards;
+}
+.hero h1 .destacado {
+  font-style: italic;
+  font-weight: 400;
+  background: linear-gradient(135deg, var(--verde-700) 0%, var(--dorado-500) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+.hero h1 .destacado::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--dorado-400);
+  border-radius: 4px;
+  opacity: 0.4;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: rayar 1s ease-out 1.2s forwards;
+}
+@keyframes rayar { to { transform: scaleX(1); } }
+
+.hero p {
+  font-size: clamp(16px, 1.5vw, 19px);
+  color: var(--texto-suave);
+  max-width: 640px;
+  margin: 0 auto 40px;
+  animation: aparecer 0.9s ease-out 0.2s backwards;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: var(--texto);
+  color: var(--bg);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all var(--normal);
+  box-shadow: var(--sombra-lg);
+  animation: aparecer 0.9s ease-out 0.3s backwards;
+  text-decoration: none;
+}
+.hero-cta:hover { transform: translateY(-2px); box-shadow: var(--sombra-xl); }
+.hero-cta .flecha { transition: transform var(--rapido); }
+.hero-cta:hover .flecha { transform: translateX(4px); }
+
+/* Mini stats hero */
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-top: 64px;
+  flex-wrap: wrap;
+  animation: aparecer 0.9s ease-out 0.5s backwards;
+}
+.hero-stat { text-align: center; }
+.hero-stat strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--verde-700);
+  letter-spacing: -0.03em;
+}
+.hero-stat span {
+  font-size: 13px;
+  color: var(--texto-claro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-tema="oscuro"] .hero-stat strong { color: var(--verde-400); }
+
+/* =========================
+   STEPPER
+   ========================= */
+.stepper-wrap {
+  margin: 40px 0 32px;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+}
+.paso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  position: relative;
+}
+.paso-numero {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  border: 2px solid var(--borde-fuerte);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--texto-claro);
+  flex-shrink: 0;
+  transition: all var(--normal);
+}
+.paso.activo .paso-numero {
+  background: var(--verde-500);
+  border-color: var(--verde-500);
+  color: white;
+  box-shadow: 0 0 0 6px var(--verde-100);
+  transform: scale(1.05);
+}
+.paso.completado .paso-numero {
+  background: var(--verde-700);
+  border-color: var(--verde-700);
+  color: white;
+}
+.paso.completado .paso-numero::before { content: '✓'; font-size: 18px; }
+.paso.completado .paso-numero span { display: none; }
+
+.paso-texto h4 {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.paso-texto p { font-size: 12px; color: var(--texto-claro); white-space: nowrap; }
+
+.paso-linea {
+  flex: 1;
+  height: 2px;
+  background: var(--borde-fuerte);
+  margin: 0 8px;
+  position: relative;
+  overflow: hidden;
+}
+.paso-linea::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--verde-500);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--lento);
+}
+.paso-linea.activa::after { transform: scaleX(1); }
+
+@media (max-width: 640px) {
+  .paso-texto { display: none; }
+  .stepper { gap: 0; padding: 16px; }
+}
+
+/* =========================
+   GRID PRINCIPAL CALCULADORA
+   ========================= */
+.calculadora {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 24px 0;
+}
+
+@media (max-width: 960px) {
+  .calculadora { grid-template-columns: 1fr; }
+}
+
+/* =========================
+   TARJETAS (cards)
+   ========================= */
+.tarjeta {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 28px;
+  box-shadow: var(--sombra-sm);
+  transition: box-shadow var(--normal), border-color var(--normal);
+}
+.tarjeta:hover { box-shadow: var(--sombra-md); }
+
+.tarjeta-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed var(--borde);
+}
+.tarjeta-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tarjeta-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.tarjeta-icono.verde { background: var(--verde-100); }
+.tarjeta-icono.dorado { background: var(--dorado-100); }
+.tarjeta-icono.azul { background: var(--azul-100); }
+.tarjeta-titulo h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.tarjeta-titulo p { font-size: 13px; color: var(--texto-claro); }
+
+.badge-total {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 14px;
+  background: var(--verde-50);
+  color: var(--verde-700);
+  border-radius: 999px;
+  border: 1px solid var(--verde-300);
+  white-space: nowrap;
+  transition: all var(--normal);
+}
+[data-tema="oscuro"] .badge-total { color: var(--verde-300); }
+.badge-total.actualizado { animation: flashVerde 600ms ease; }
+@keyframes flashVerde {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); background: var(--verde-500); color: white; }
+  100% { transform: scale(1); }
+}
+
+/* =========================
+   LISTA DE COSTOS
+   ========================= */
+.lista-costos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fila-costo {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-soft);
+  border-radius: var(--radio);
+  border: 1px solid transparent;
+  transition: all var(--rapido);
+  animation: aparecerFila 400ms var(--rebote);
+}
+.fila-costo:hover { border-color: var(--verde-300); transform: translateX(2px); }
+.fila-costo.con-valor { background: var(--verde-50); border-color: var(--verde-100); }
+[data-tema="oscuro"] .fila-costo.con-valor { background: rgba(16,185,129,0.08); }
+
+@keyframes aparecerFila {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.fila-costo-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.fila-costo-info .emoji { font-size: 20px; flex-shrink: 0; }
+.fila-costo-info span {
+  font-weight: 500;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.input-monto {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-monto::before {
+  content: '$';
+  position: absolute;
+  left: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--texto-claro);
+  font-size: 13px;
+  pointer-events: none;
+}
+.input-monto input {
+  width: 100%;
+  padding: 8px 10px 8px 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  transition: all var(--rapido);
+  outline: none;
+}
+.input-monto input:focus { border-color: var(--verde-500); box-shadow: 0 0 0 3px var(--verde-100); }
+
+.btn-eliminar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto-claro);
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  transition: all var(--rapido);
+  border: 1px solid transparent;
+}
+.btn-eliminar:hover { background: var(--rojo-100); color: var(--rojo-500); border-color: var(--rojo-500); }
+
+/* Botón agregar */
+.btn-agregar {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1.5px dashed var(--borde-fuerte);
+  border-radius: var(--radio);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--texto-suave);
+  transition: all var(--rapido);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-agregar:hover {
+  border-color: var(--verde-500);
+  color: var(--verde-700);
+  background: var(--verde-50);
+}
+[data-tema="oscuro"] .btn-agregar:hover { color: var(--verde-300); }
+
+/* =========================
+   FORMULARIO CUSTOM
+   ========================= */
+.formulario-custom {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--verde-50);
+  border: 1px solid var(--verde-300);
+  border-radius: var(--radio);
+  animation: aparecer 300ms ease;
+}
+[data-tema="oscuro"] .formulario-custom { background: rgba(16,185,129,0.08); }
+.formulario-custom input {
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--rapido);
+}
+.formulario-custom input:focus { border-color: var(--verde-500); }
+.formulario-custom button {
+  padding: 10px 16px;
+  background: var(--verde-700);
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background var(--rapido);
+}
+.formulario-custom button:hover { background: var(--verde-900); }
+.formulario-custom .cancelar {
+  background: transparent;
+  color: var(--texto-claro);
+  padding: 10px 12px;
+}
+
+/* =========================
+   PANEL PRECIO
+   ========================= */
+.panel-precio {
+  background: linear-gradient(135deg, var(--verde-700) 0%, var(--verde-900) 100%);
+  color: white;
+  padding: 32px;
+  border-radius: var(--radio-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sombra-verde);
+}
+.panel-precio::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 60%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(245,158,11,0.25), transparent 60%);
+  pointer-events: none;
+}
+.panel-precio h3 {
+  font-size: 22px;
+  margin-bottom: 8px;
+  color: white;
+}
+.panel-precio > p {
+  font-size: 14px;
+  color: var(--verde-100);
+  margin-bottom: 24px;
+  position: relative;
+}
+.input-precio {
+  position: relative;
+}
+.input-precio::before {
+  content: '$';
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--dorado-400);
+}
+.input-precio input {
+  width: 100%;
+  padding: 22px 24px 22px 56px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: var(--radio);
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  outline: none;
+  transition: all var(--rapido);
+}
+.input-precio input::placeholder { color: rgba(255,255,255,0.4); }
+.input-precio input:focus {
+  border-color: var(--dorado-400);
+  background: rgba(0,0,0,0.35);
+  box-shadow: 0 0 0 4px rgba(245,158,11,0.2);
+}
+
+/* =========================
+   BOTÓN CALCULAR (gran CTA)
+   ========================= */
+.btn-calcular {
+  margin-top: 24px;
+  width: 100%;
+  padding: 20px;
+  background: var(--dorado-500);
+  color: var(--verde-900);
+  border-radius: var(--radio);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  transition: all var(--normal);
+  box-shadow: var(--sombra-dorado), inset 0 1px 0 rgba(255,255,255,0.4);
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.btn-calcular:hover {
+  background: var(--dorado-400);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(245,158,11,0.45), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.btn-calcular:active { transform: translateY(0); }
+.btn-calcular::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: left 800ms;
+}
+.btn-calcular:hover::after { left: 100%; }
+
+/* =========================
+   RESULTADOS
+   ========================= */
+.resultados-seccion {
+  margin-top: 40px;
+  scroll-margin-top: 100px;
+}
+.resultados-seccion.oculto { display: none; }
+
+.resultados-cabecera {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.resultados-cabecera h2 {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.resultados-cabecera p {
+  color: var(--texto-suave);
+  font-size: 17px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* Grid de métricas */
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) { .metricas { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .metricas { grid-template-columns: 1fr; } }
+
+.metrica {
+  padding: 24px;
+  border-radius: var(--radio-lg);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--normal);
+}
+.metrica:hover { transform: translateY(-4px); }
+.metrica.principal {
+  background: var(--texto);
+  color: var(--bg);
+  grid-column: span 2;
+}
+.metrica.secundaria {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  box-shadow: var(--sombra-sm);
+}
+.metrica .etiqueta {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 8px;
+}
+.metrica .valor {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.metrica .unidad {
+  font-size: 14px;
+  opacity: 0.7;
+  font-weight: 500;
+}
+.metrica.principal::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--dorado-500), transparent 60%);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) { .metrica.principal { grid-column: span 2; } }
+@media (max-width: 480px) { .metrica.principal { grid-column: span 1; } }
+
+/* Tarjeta gráfico */
+.tarjeta-grafico {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 28px;
+  box-shadow: var(--sombra-sm);
+  margin-bottom: 24px;
+}
+.grafico-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.grafico-cabecera h3 {
+  font-size: 22px;
+  font-weight: 600;
+}
+.leyenda {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.leyenda-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+.contenedor-grafico {
+  position: relative;
+  height: 360px;
+}
+@media (max-width: 600px) { .contenedor-grafico { height: 280px; } }
+
+/* Interpretación */
+.interpretacion {
+  background: linear-gradient(135deg, var(--verde-50), var(--dorado-100));
+  border: 1px solid var(--verde-300);
+  border-radius: var(--radio-lg);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+[data-tema="oscuro"] .interpretacion {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(245,158,11,0.08));
+  border-color: var(--verde-700);
+}
+.interpretacion h3 {
+  font-size: 22px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.interpretacion .puntos {
+  display: grid;
+  gap: 12px;
+}
+.punto-interpretacion {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radio);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.punto-interpretacion .icono {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.punto-interpretacion strong {
+  font-family: var(--mono);
+  color: var(--verde-700);
+  font-weight: 700;
+}
+[data-tema="oscuro"] .punto-interpretacion strong { color: var(--verde-400); }
+.punto-interpretacion.perdida strong { color: var(--rojo-500); }
+.punto-interpretacion.ganancia strong { color: var(--verde-700); }
+
+/* Simulador */
+.simulador {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 28px;
+  box-shadow: var(--sombra-sm);
+}
+.simulador h3 {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.simulador > p {
+  color: var(--texto-suave);
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+.simulador-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.simulador-form input {
+  flex: 1;
+  min-width: 180px;
+  padding: 14px 18px;
+  background: var(--bg-soft);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color var(--rapido);
+}
+.simulador-form input:focus { border-color: var(--verde-500); }
+.simulador-form button {
+  padding: 14px 28px;
+  background: var(--verde-700);
+  color: white;
+  border-radius: var(--radio);
+  font-weight: 600;
+  transition: background var(--rapido);
+}
+.simulador-form button:hover { background: var(--verde-900); }
+
+.simulador-resultado {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: var(--radio);
+  font-size: 16px;
+  display: none;
+  animation: aparecer 400ms ease;
+}
+.simulador-resultado.mostrar { display: block; }
+.simulador-resultado.ganancia { background: var(--verde-50); border: 1px solid var(--verde-500); color: var(--verde-900); }
+.simulador-resultado.perdida { background: var(--rojo-100); border: 1px solid var(--rojo-500); color: #7f1d1d; }
+.simulador-resultado.equilibrio { background: var(--azul-100); border: 1px solid var(--azul-500); color: #1e3a8a; }
+[data-tema="oscuro"] .simulador-resultado.ganancia { color: var(--verde-300); }
+[data-tema="oscuro"] .simulador-resultado.perdida { color: #fca5a5; }
+[data-tema="oscuro"] .simulador-resultado.equilibrio { color: #93c5fd; }
+.simulador-resultado strong {
+  font-family: var(--mono);
+  font-size: 22px;
+  display: block;
+  margin: 4px 0;
+}
+
+/* =========================
+   ACCIONES SECUNDARIAS
+   ========================= */
+.acciones-finales {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.btn-accion {
+  padding: 14px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--rapido);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-accion:hover { border-color: var(--verde-500); transform: translateY(-1px); box-shadow: var(--sombra-md); }
+.btn-accion.peligro:hover { border-color: var(--rojo-500); color: var(--rojo-500); }
+
+/* =========================
+   SECCIÓN EDUCATIVA
+   ========================= */
+.educativa {
+  margin: 80px 0 40px;
+  padding: 60px 0;
+  border-top: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+}
+.educativa h2 {
+  text-align: center;
+  font-size: clamp(28px, 4vw, 44px);
+  margin-bottom: 16px;
+}
+.educativa > p.subtitulo {
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 17px;
+  max-width: 580px;
+  margin: 0 auto 48px;
+}
+
+.educativa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+@media (max-width: 800px) { .educativa-grid { grid-template-columns: 1fr; } }
+
+.concepto {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.concepto::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+}
+.concepto.fijos::before { background: linear-gradient(90deg, var(--verde-500), var(--verde-700)); }
+.concepto.variables::before { background: linear-gradient(90deg, var(--dorado-500), var(--dorado-700)); }
+
+.concepto-icono {
+  font-size: 36px;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+.concepto h3 {
+  font-size: 26px;
+  margin-bottom: 12px;
+}
+.concepto > p {
+  color: var(--texto-suave);
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+.concepto ul {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.concepto ul li {
+  padding: 12px 14px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.concepto ul li::before { content: '→'; color: var(--verde-700); font-weight: 700; flex-shrink: 0; }
+
+/* Guía: Cómo encontrar costos variables */
+.guia-cv {
+  margin-top: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 36px 32px;
+}
+.guia-cv-cabecera {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.guia-cv-cabecera h3 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+.guia-cv-cabecera p {
+  color: var(--texto-suave);
+  font-size: 15px;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.pasos-cv {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 36px;
+}
+@media (max-width: 900px) { .pasos-cv { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .pasos-cv { grid-template-columns: 1fr; } }
+
+.paso-cv {
+  padding: 22px 20px;
+  background: var(--bg-soft);
+  border-radius: var(--radio);
+  position: relative;
+  border-top: 3px solid var(--verde-500);
+}
+.paso-cv .num {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 600;
+  color: var(--verde-500);
+  line-height: 1;
+  margin-bottom: 8px;
+  letter-spacing: -0.03em;
+}
+.paso-cv h4 {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.paso-cv p {
+  font-size: 13px;
+  color: var(--texto-suave);
+  line-height: 1.5;
+}
+
+/* Ejemplos trabajados */
+.ejemplos-cv-titulo {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--sans);
+  margin-bottom: 8px;
+  color: var(--texto);
+}
+.ejemplos-cv-titulo + p {
+  text-align: center;
+  font-size: 14px;
+  color: var(--texto-claro);
+  margin-bottom: 24px;
+}
+
+.ejemplos-cv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+@media (max-width: 800px) { .ejemplos-cv { grid-template-columns: 1fr; } }
+
+.ejemplo-cv {
+  background: linear-gradient(135deg, var(--verde-50), var(--dorado-100));
+  border: 1px solid var(--verde-300);
+  border-radius: var(--radio);
+  padding: 24px;
+}
+[data-tema="oscuro"] .ejemplo-cv { 
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(245,158,11,0.06));
+  border-color: var(--verde-700);
+}
+.ejemplo-cv-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+}
+.ejemplo-cv-titulo .emoji { font-size: 28px; }
+.ejemplo-cv-titulo small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texto-claro);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.calculo-paso {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.calculo-paso strong { color: var(--verde-700); font-weight: 700; }
+[data-tema="oscuro"] .calculo-paso strong { color: var(--verde-400); }
+.calculo-paso .formula-inline {
+  display: inline-block;
+  background: var(--bg-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 2px 0;
+}
+.calculo-paso .resultado-paso {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--verde-700);
+}
+[data-tema="oscuro"] .calculo-paso .resultado-paso { color: var(--verde-400); }
+
+.suma-total {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--verde-700);
+  color: white;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.suma-total .valor-total {
+  font-family: var(--mono);
+  font-size: 18px;
+  color: var(--dorado-400);
+}
+
+/* Trampas comunes */
+.trampas-cv {
+  background: var(--rojo-100);
+  border: 1px solid var(--rojo-500);
+  border-radius: var(--radio);
+  padding: 24px;
+}
+[data-tema="oscuro"] .trampas-cv {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.4);
+}
+.trampas-cv h4 {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #991b1b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-tema="oscuro"] .trampas-cv h4 { color: #fca5a5; }
+.trampas-cv ul {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.trampas-cv li {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  align-items: flex-start;
+}
+.trampas-cv li::before {
+  content: '✗';
+  color: var(--rojo-500);
+  font-weight: 900;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.trampas-cv li strong { font-weight: 700; }
+
+/* Fórmula */
+.formula-caja {
+  background: var(--texto);
+  color: var(--bg);
+  padding: 40px 32px;
+  border-radius: var(--radio-lg);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.formula-caja::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(16,185,129,0.2), transparent 60%);
+}
+.formula-caja h3 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 24px;
+  position: relative;
+}
+.formula {
+  font-family: var(--display);
+  font-size: clamp(20px, 3vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  position: relative;
+  display: inline-block;
+}
+.formula .fraccion {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 8px;
+}
+.formula .fraccion .numerador {
+  border-bottom: 2px solid var(--dorado-400);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+.formula .destacar { color: var(--dorado-400); font-style: italic; }
+
+/* Disclaimer / Aviso de fuentes y datos orientativos */
+.disclaimer-datos {
+  background: linear-gradient(135deg, var(--azul-100), var(--bg-soft));
+  border: 1px solid var(--azul-500);
+  border-left-width: 4px;
+  border-radius: var(--radio);
+  padding: 16px 20px;
+  margin: 20px 0 28px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+[data-tema="oscuro"] .disclaimer-datos {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+.disclaimer-datos .icono {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.disclaimer-datos .texto {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--texto-suave);
+}
+.disclaimer-datos .texto strong.titulo-aviso {
+  color: var(--texto);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-family: var(--sans);
+}
+.disclaimer-datos a {
+  color: #1e40af;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  word-break: break-word;
+}
+.disclaimer-datos a:hover {
+  color: var(--verde-700);
+}
+[data-tema="oscuro"] .disclaimer-datos a { color: #93c5fd; }
+[data-tema="oscuro"] .disclaimer-datos a:hover { color: var(--verde-300); }
+
+/* Caso práctico */
+.caso-practico {
+  margin-top: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 32px;
+}
+.caso-practico-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.caso-practico-cabecera h3 { font-size: 24px; }
+.caso-practico-cabecera > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Selector de casos tipo pills */
+.casos-selector {
+  display: inline-flex;
+  background: var(--bg-soft);
+  padding: 4px;
+  border-radius: 999px;
+  gap: 2px;
+}
+.caso-tab {
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--texto-suave);
+  transition: all var(--rapido);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.caso-tab:hover { color: var(--texto); }
+.caso-tab.activo {
+  background: var(--bg-card);
+  color: var(--verde-700);
+  box-shadow: var(--sombra-sm);
+}
+[data-tema="oscuro"] .caso-tab.activo { color: var(--verde-400); }
+
+/* Contenido del caso (con transición suave) */
+.caso-contenido {
+  display: block;
+  animation: aparecer 400ms ease;
+}
+.caso-contenido.oculto { display: none; }
+.caso-practico-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 800px) { .caso-practico-grid { grid-template-columns: 1fr; } }
+.caso-col {
+  padding: 20px;
+  background: var(--bg-soft);
+  border-radius: var(--radio);
+}
+.caso-col h4 {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+  color: var(--verde-700);
+}
+[data-tema="oscuro"] .caso-col h4 { color: var(--verde-400); }
+.caso-col ul {
+  list-style: none;
+  font-size: 14px;
+  display: grid;
+  gap: 6px;
+}
+.caso-col li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.caso-col li span:last-child {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.caso-col .total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--borde-fuerte);
+  font-weight: 700;
+  font-size: 15px;
+}
+.caso-col.resultado { background: var(--verde-700); color: white; }
+.caso-col.resultado h4 { color: var(--dorado-400); }
+.caso-col.resultado .resultado-valor {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+.caso-col.resultado p { font-size: 13px; color: var(--verde-100); margin-top: 6px; line-height: 1.5; }
+.btn-caso-cargar {
+  margin-top: 16px;
+  width: 100%;
+  padding: 10px;
+  background: var(--dorado-500);
+  color: var(--verde-900);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  transition: background var(--rapido);
+}
+.btn-caso-cargar:hover { background: var(--dorado-400); }
+
+/* =========================
+   FOOTER
+   ========================= */
+footer {
+  margin-top: 80px;
+  padding: 48px 0 32px;
+  text-align: center;
+}
+footer .firma {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 19px;
+  margin-bottom: 8px;
+  color: var(--verde-700);
+}
+[data-tema="oscuro"] footer .firma { color: var(--verde-400); }
+footer p {
+  font-size: 14px;
+  color: var(--texto-claro);
+}
+footer .corazon { color: var(--rojo-500); display: inline-block; animation: latido 1.5s ease-in-out infinite; }
+@keyframes latido {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* =========================
+   TOAST DE NOTIFICACIÓN
+   ========================= */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  padding: 14px 24px;
+  background: var(--texto);
+  color: var(--bg);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: var(--sombra-xl);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform var(--rebote);
+  max-width: 90vw;
+}
+.toast.mostrar { transform: translateX(-50%) translateY(0); }
+.toast.exito { background: var(--verde-700); color: white; }
+.toast.error { background: var(--rojo-500); color: white; }
+.toast.advertencia { background: var(--dorado-500); color: var(--verde-900); }
+
+/* =========================
+   CONFETTI
+   ========================= */
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* =========================
+   IMPRESIÓN
+   ========================= */
+@media print {
+  .barra-superior, .hero-cta, .btn-tema, .acciones-finales,
+  .btn-calcular, .simulador-form, .btn-agregar, .btn-eliminar, .btn-caso-cargar,
+  .fondo-decorativo, .stepper-wrap { display: none !important; }
+  body { background: white; color: black; }
+  .tarjeta, .panel-precio, .metrica, .tarjeta-grafico, .interpretacion, .simulador, .concepto, .caso-practico {
+    break-inside: avoid; box-shadow: none; border: 1px solid #ccc;
+  }
+  .panel-precio { background: #f0f0f0 !important; color: black !important; }
+  .metrica.principal { background: #1c1917 !important; }
+}
+
+/* Animación al hacer scroll a resultados */
+.resultados-seccion.aparecer { animation: aparecerSuave 600ms ease-out; }
+@keyframes aparecerSuave {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body data-tema="claro">
+
+<!-- Fondo decorativo -->
+<div class="fondo-decorativo" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<!-- ========== BARRA SUPERIOR ========== -->
+<header class="barra-superior">
+  <div class="contenedor barra-contenido">
+    <div class="logo">
+      <div class="logo-icono">🌱</div>
+      <div>
+        Punto de Equilibrio
+        <small>Para emprendedores de Colombia</small>
+      </div>
+    </div>
+    <button class="btn-tema" id="btnTema" aria-label="Cambiar tema">🌙</button>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="hero-etiqueta">
+      <span class="hero-etiqueta-punto"></span>
+      Herramienta gratuita · Hecha en Santa Bárbara, Santander
+    </div>
+    <h1>
+      Descubre cuándo<br>
+      tu negocio empieza a <span class="destacado">ganar dinero</span>
+    </h1>
+    <p>
+      Una calculadora educativa que te enseña paso a paso cuántas unidades necesitas vender
+      para cubrir todos tus costos y empezar a generar ganancias reales.
+    </p>
+    <a href="#calculadora" class="hero-cta">
+      Empezar ahora
+      <span class="flecha">→</span>
+    </a>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <strong>3</strong>
+        <span>pasos simples</span>
+      </div>
+      <div class="hero-stat">
+        <strong>100%</strong>
+        <span>gratis</span>
+      </div>
+      <div class="hero-stat">
+        <strong>0</strong>
+        <span>conocimiento previo</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STEPPER ========== -->
+  <div class="stepper-wrap" id="calculadora">
+    <div class="stepper">
+      <div class="paso activo" id="paso1">
+        <div class="paso-numero"><span>1</span></div>
+        <div class="paso-texto">
+          <h4>Costos Fijos</h4>
+          <p>Gastos del mes</p>
+        </div>
+      </div>
+      <div class="paso-linea" id="linea1"></div>
+      <div class="paso" id="paso2">
+        <div class="paso-numero"><span>2</span></div>
+        <div class="paso-texto">
+          <h4>Costos Variables</h4>
+          <p>Costo por unidad</p>
+        </div>
+      </div>
+      <div class="paso-linea" id="linea2"></div>
+      <div class="paso" id="paso3">
+        <div class="paso-numero"><span>3</span></div>
+        <div class="paso-texto">
+          <h4>Precio y Cálculo</h4>
+          <p>Tu punto de equilibrio</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CALCULADORA ========== -->
+  <section class="calculadora">
+
+    <!-- COSTOS FIJOS -->
+    <div class="tarjeta" id="cardFijos">
+      <div class="tarjeta-cabecera">
+        <div class="tarjeta-titulo">
+          <div class="tarjeta-icono verde">💰</div>
+          <div>
+            <h3>Costos Fijos</h3>
+            <p>Lo que pagas cada mes, vendas o no</p>
+          </div>
+        </div>
+        <div class="badge-total" id="totalFijos">$ 0</div>
+      </div>
+      <div class="lista-costos" id="listaFijos"></div>
+      <button class="btn-agregar" id="btnAgregarFijo">
+        <span style="font-size:18px">+</span> Agregar otro costo fijo
+      </button>
+      <div class="formulario-custom" id="formFijo" style="display:none">
+        <input type="text" id="nuevoFijoNombre" placeholder="Ej: Internet" />
+        <input type="text" id="nuevoFijoValor" placeholder="0" inputmode="decimal" />
+        <button id="confirmarFijo">Agregar</button>
+      </div>
+    </div>
+
+    <!-- COSTOS VARIABLES -->
+    <div class="tarjeta" id="cardVariables">
+      <div class="tarjeta-cabecera">
+        <div class="tarjeta-titulo">
+          <div class="tarjeta-icono dorado">📈</div>
+          <div>
+            <h3>Costos Variables</h3>
+            <p>Cuánto te cuesta producir <strong>UNA sola unidad</strong></p>
+          </div>
+        </div>
+        <div class="badge-total" id="totalVariables">$ 0</div>
+      </div>
+      <div style="background:var(--dorado-100); border:1px solid var(--dorado-400); border-radius:10px; padding:10px 14px; margin-bottom:16px; font-size:13px; color:var(--dorado-700); display:flex; gap:8px; align-items:flex-start;">
+        <span style="font-size:16px; flex-shrink:0;">⚠️</span>
+        <span><strong>Atención:</strong> ingresa el costo por <strong>cada unidad</strong> producida, no el total del mes. Ej: si producir un pan cuesta $1.400 en insumos, escribe <code style="background:rgba(0,0,0,0.08); padding:1px 5px; border-radius:4px; font-family:var(--mono);">1400</code> — no $4.200.000 del mes.</span>
+      </div>
+      <div class="lista-costos" id="listaVariables"></div>
+      <button class="btn-agregar" id="btnAgregarVar">
+        <span style="font-size:18px">+</span> Agregar otro costo variable
+      </button>
+      <div class="formulario-custom" id="formVar" style="display:none">
+        <input type="text" id="nuevoVarNombre" placeholder="Ej: Etiquetas" />
+        <input type="text" id="nuevoVarValor" placeholder="0" inputmode="decimal" />
+        <button id="confirmarVar">Agregar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PANEL PRECIO ========== -->
+  <section class="panel-precio">
+    <h3>💵 Paso 3: ¿A qué precio vendes cada unidad?</h3>
+    <p>Este es el precio al que vendes <strong>un</strong> producto al cliente final</p>
+    <div class="input-precio">
+      <input type="text" id="inputPrecio" placeholder="0" inputmode="decimal" autocomplete="off" />
+    </div>
+    <button class="btn-calcular" id="btnCalcular">
+      🧮 Calcular mi punto de equilibrio
+      <span>→</span>
+    </button>
+  </section>
+
+  <!-- ========== RESULTADOS ========== -->
+  <section class="resultados-seccion oculto" id="resultados">
+    <div class="resultados-cabecera">
+      <h2>Tu punto de equilibrio</h2>
+      <p>Aquí está exactamente cuánto necesitas vender para que tu negocio no pierda dinero</p>
+    </div>
+
+    <div class="metricas">
+      <div class="metrica principal">
+        <div class="etiqueta">Punto de equilibrio</div>
+        <div class="valor" id="metricaUnidades">0</div>
+        <div class="unidad">unidades al mes</div>
+      </div>
+      <div class="metrica principal">
+        <div class="etiqueta">En dinero</div>
+        <div class="valor" id="metricaDinero">$ 0</div>
+        <div class="unidad">en ventas mensuales</div>
+      </div>
+      <div class="metrica secundaria">
+        <div class="etiqueta">Margen de contribución</div>
+        <div class="valor" id="metricaMargen">$ 0</div>
+        <div class="unidad">por unidad vendida</div>
+      </div>
+      <div class="metrica secundaria">
+        <div class="etiqueta">Margen porcentual</div>
+        <div class="valor" id="metricaMargenPct">0%</div>
+        <div class="unidad">del precio de venta</div>
+      </div>
+    </div>
+
+    <div class="tarjeta-grafico">
+      <div class="grafico-cabecera">
+        <h3>📊 Gráfico de Punto de Equilibrio</h3>
+        <div class="leyenda">
+          <span><span class="leyenda-color" style="background:#10b981"></span> Ingresos</span>
+          <span><span class="leyenda-color" style="background:#ef4444"></span> Costos totales</span>
+          <span><span class="leyenda-color" style="background:#f59e0b"></span> Punto de equilibrio</span>
+        </div>
+      </div>
+      <div class="contenedor-grafico">
+        <canvas id="grafico"></canvas>
+      </div>
+    </div>
+
+    <div class="interpretacion">
+      <h3>📚 ¿Qué significa esto?</h3>
+      <div class="puntos" id="interpretacionPuntos"></div>
+    </div>
+
+    <div class="simulador">
+      <h3>🎮 Simulador: ¿Cuánto ganaría si vendo X unidades?</h3>
+      <p>Prueba diferentes escenarios para ver tu ganancia o pérdida</p>
+      <div class="simulador-form">
+        <input type="text" id="inputSimulador" placeholder="Ej: 1000 unidades" inputmode="decimal" />
+        <button id="btnSimular">Simular ventas</button>
+      </div>
+      <div class="simulador-resultado" id="resultadoSim"></div>
+    </div>
+
+    <div class="acciones-finales">
+      <button class="btn-accion" id="btnExportarExcel">📊 Descargar en Excel</button>
+      <button class="btn-accion" id="btnExportarCSV">📄 Descargar en CSV</button>
+      <button class="btn-accion" id="btnImprimir">🖨️ Imprimir / Guardar PDF</button>
+      <button class="btn-accion peligro" id="btnLimpiar">🧹 Empezar de nuevo</button>
+    </div>
+  </section>
+
+  <!-- ========== SECCIÓN EDUCATIVA ========== -->
+  <section class="educativa">
+    <h2>Aprende los conceptos clave</h2>
+    <p class="subtitulo">Antes de calcular, entiende qué estás midiendo. Esto te hará un mejor emprendedor.</p>
+
+    <div class="educativa-grid">
+      <div class="concepto fijos">
+        <div class="concepto-icono">🏢</div>
+        <h3>Costos Fijos</h3>
+        <p>Son los gastos que <strong>NO cambian</strong> sin importar cuánto produzcas o vendas. Permanecen constantes mes a mes.</p>
+        <ul>
+          <li>Se pagan aunque no vendas nada</li>
+          <li>Ejemplos: arriendo, salarios, seguros, servicios públicos base</li>
+          <li>Son necesarios para que el negocio opere</li>
+          <li>No dependen del volumen de ventas</li>
+        </ul>
+      </div>
+
+      <div class="concepto variables">
+        <div class="concepto-icono">📦</div>
+        <h3>Costos Variables</h3>
+        <p>Son costos que <strong>SÍ cambian</strong> directamente con la cantidad que produces. Se calculan por unidad.</p>
+        <ul>
+          <li>Si no produces nada, son cero</li>
+          <li>Ejemplos: materias primas, empaque, comisiones por venta</li>
+          <li>Crecen al aumentar la producción</li>
+          <li>Son directamente controlables</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula-caja">
+      <h3>La fórmula que vamos a usar</h3>
+      <div class="formula">
+        <span class="destacar">Punto de Equilibrio</span> &nbsp;=&nbsp;
+        <span class="fraccion">
+          <span class="numerador">Costos Fijos Totales</span>
+          <span>Precio Venta − Costo Variable por Unidad</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ===== GUÍA: CÓMO ENCONTRAR LOS COSTOS VARIABLES ===== -->
+    <div class="guia-cv">
+      <div class="guia-cv-cabecera">
+        <h3>🔍 Cómo encontrar tus costos variables</h3>
+        <p>Esta es la parte más difícil para muchos emprendedores. Aquí te enseñamos cómo desglosar el costo de producir <strong>una sola unidad</strong> de tu producto.</p>
+      </div>
+
+      <!-- 4 PASOS -->
+      <div class="pasos-cv">
+        <div class="paso-cv">
+          <div class="num">1</div>
+          <h4>Define tu unidad</h4>
+          <p>¿Qué vas a vender? Un huevo, un pan, un kilo de cuajada, un litro de leche. Esa es tu unidad.</p>
+        </div>
+        <div class="paso-cv">
+          <div class="num">2</div>
+          <h4>Lista los insumos</h4>
+          <p>Apunta TODO lo que se gasta cuando produces una unidad: materia prima, empaque, transporte, energía, tu trabajo.</p>
+        </div>
+        <div class="paso-cv">
+          <div class="num">3</div>
+          <h4>Calcula cada uno por unidad</h4>
+          <p>Si compras a granel, divide entre cuántas unidades te alcanza. Una regla de tres sencilla.</p>
+        </div>
+        <div class="paso-cv">
+          <div class="num">4</div>
+          <h4>Suma todo</h4>
+          <p>La suma de todos esos costos pequeños es tu costo variable por unidad. Ese número va en la calculadora.</p>
+        </div>
+      </div>
+
+      <!-- EJEMPLOS TRABAJADOS -->
+      <div class="ejemplos-cv-titulo">📝 Dos ejemplos del paso 3 (el más confuso)</div>
+      <p>Aquí desglosamos cómo se calcula el costo de un insumo por unidad de producto en dos actividades reales de Santander:</p>
+
+      <div class="disclaimer-datos">
+        <span class="icono">ℹ️</span>
+        <div class="texto">
+          <strong class="titulo-aviso">Los valores son solo orientativos — sirven para ilustrar el método</strong>
+          Los precios usados en estos ejemplos son aproximaciones con fines educativos. Los costos reales varían según el municipio, la temporada, la escala de producción y el proveedor. El precio de leche cruda en finca corresponde a referencias del <strong>DANE-SIPSA</strong> para Santander (2025). Para consultar datos oficiales actualizados visita el Sistema de Información de Precios y Abastecimiento del Sector Agropecuario: <a href="https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa" target="_blank" rel="noopener">dane.gov.co/SIPSA</a>.
+        </div>
+      </div>
+
+      <div class="ejemplos-cv">
+        <!-- Ejemplo 1: Huevos -->
+        <div class="ejemplo-cv">
+          <div class="ejemplo-cv-titulo">
+            <span class="emoji">🥚</span>
+            <div>
+              Producción de huevos
+              <small>Costo por huevo</small>
+            </div>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>🌾 Alimento (concentrado)</strong><br>
+            Un bulto de 40 kg cuesta $145.000 y alcanza para alimentar a 500 gallinas durante un día.<br>
+            <span class="formula-inline">$145.000 ÷ 500 huevos = $290</span>
+            <span class="resultado-paso">→ Concentrado por huevo: $290</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>📦 Empaque (cubeta)</strong><br>
+            Una cubeta para 30 huevos cuesta $900.<br>
+            <span class="formula-inline">$900 ÷ 30 huevos = $30</span>
+            <span class="resultado-paso">→ Empaque por huevo: $30</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>🚚 Transporte</strong><br>
+            Llevas 2.000 huevos al pueblo en un viaje que cuesta $60.000.<br>
+            <span class="formula-inline">$60.000 ÷ 2.000 huevos = $30</span>
+            <span class="resultado-paso">→ Transporte por huevo: $30</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>⚡ Energía + otros pequeños</strong>
+            <span class="resultado-paso">→ $30 por huevo</span>
+          </div>
+
+          <div class="suma-total">
+            <span>💰 Costo variable por huevo:</span>
+            <span class="valor-total">$380</span>
+          </div>
+        </div>
+
+        <!-- Ejemplo 2: Cuajada -->
+        <div class="ejemplo-cv">
+          <div class="ejemplo-cv-titulo">
+            <span class="emoji">🧀</span>
+            <div>
+              Producción de cuajada
+              <small>Costo por kilo</small>
+            </div>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>🥛 Leche cruda</strong><br>
+            Para hacer 1 kg de cuajada se necesitan 7 litros de leche. En tu finca la leche cuesta $1.800/L.<br>
+            <span class="formula-inline">7 L × $1.800 = $12.600</span>
+            <span class="resultado-paso">→ Leche por kilo: $12.600</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>🧂 Cuajo + sal</strong><br>
+            Un frasco de cuajo de $15.000 te alcanza para 100 kg. La sal es muy poco.<br>
+            <span class="formula-inline">$15.000 ÷ 100 kg + sal ≈ $200</span>
+            <span class="resultado-paso">→ Cuajo y sal por kilo: $200</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>📦 Empaque</strong><br>
+            Bolsa o molde plástico individual.
+            <span class="resultado-paso">→ Empaque por kilo: $200</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>🔥 Energía (gas o leña)</strong><br>
+            Calentar la leche tiene su costo. Estimado por kilo producido.
+            <span class="resultado-paso">→ Energía por kilo: $250</span>
+          </div>
+
+          <div class="calculo-paso">
+            <strong>👷 Tu mano de obra directa</strong><br>
+            El tiempo que tomas haciendo la cuajada también vale.
+            <span class="resultado-paso">→ Mano de obra por kilo: $200</span>
+          </div>
+
+          <div class="suma-total">
+            <span>💰 Costo variable por kilo:</span>
+            <span class="valor-total">$13.450</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAMPAS COMUNES -->
+      <div class="trampas-cv">
+        <h4>⚠️ Errores frecuentes que debes evitar</h4>
+        <ul>
+          <li><strong>Meter el total del mes en lugar del costo por unidad.</strong> Si gastas $4.200.000 en harina al mes y produces 3.000 panes, el costo por pan es $1.400, no $4.200.000.</li>
+          <li><strong>Olvidar insumos pequeños.</strong> La sal, el cuajo, la cinta, las etiquetas... parecen poco pero suman. Apunta todo.</li>
+          <li><strong>Mezclar costos fijos con variables.</strong> El arriendo de la finca NO va aquí — ese es fijo. Aquí solo va lo que crece cuando produces más.</li>
+          <li><strong>No contar tu tiempo.</strong> Tu mano de obra es un costo real. Aunque sea tu negocio, si dedicas 4 horas a hacer cuajada, ese tiempo tiene valor.</li>
+          <li><strong>Confundir precio de venta con costo.</strong> El precio es lo que cobras al cliente. El costo es lo que TÚ pagas para producir.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="caso-practico">
+      <div class="caso-practico-cabecera">
+        <div>
+          <span style="font-size:32px">🎯</span>
+          <div>
+            <h3>Casos prácticos de la región</h3>
+            <p style="color:var(--texto-claro); font-size:14px">Aprende con actividades típicas de Santander, Colombia</p>
+          </div>
+        </div>
+        <div class="casos-selector">
+          <button class="caso-tab activo" data-caso="panaderia">🥖 Panadería</button>
+          <button class="caso-tab" data-caso="avicola">🥚 Avícola</button>
+          <button class="caso-tab" data-caso="cuajada">🧀 Cuajada</button>
+        </div>
+      </div>
+
+      <div class="disclaimer-datos">
+        <span class="icono">📊</span>
+        <div class="texto">
+          <strong class="titulo-aviso">Valores orientativos · Fuente: DANE-SIPSA</strong>
+          Los datos de estos casos son referencias educativas basadas en precios promedio del DANE-SIPSA y observación del mercado regional. <strong>Pueden variar significativamente</strong> según ubicación, escala y momento del año. Antes de tomar decisiones reales para tu negocio, verifica los precios actuales con tus proveedores y consulta cifras oficiales en <a href="https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa" target="_blank" rel="noopener">dane.gov.co/SIPSA</a>.
+        </div>
+      </div>
+
+      <!-- CASO PANADERÍA -->
+      <div class="caso-contenido" data-caso="panaderia">
+        <div class="caso-practico-grid">
+          <div class="caso-col">
+            <h4>💰 Costos Fijos (mes)</h4>
+            <ul>
+              <li><span>Arriendo local</span><span>$2.500.000</span></li>
+              <li><span>Salario panadero</span><span>$1.800.000</span></li>
+              <li><span>Servicios</span><span>$450.000</span></li>
+              <li><span>Seguros</span><span>$200.000</span></li>
+              <li><span>Otros</span><span>$300.000</span></li>
+              <li class="total"><span>TOTAL</span><span>$5.250.000</span></li>
+            </ul>
+          </div>
+          <div class="caso-col">
+            <h4>📦 Costo por pan</h4>
+            <ul>
+              <li><span>Harina, sal, levadura</span><span>$650</span></li>
+              <li><span>Mano de obra directa</span><span>$300</span></li>
+              <li><span>Empaque</span><span>$200</span></li>
+              <li><span>Energía variable</span><span>$150</span></li>
+              <li><span>Otros</span><span>$100</span></li>
+              <li class="total"><span>TOTAL POR PAN</span><span>$1.400</span></li>
+            </ul>
+          </div>
+          <div class="caso-col resultado">
+            <h4>🎯 Resultado</h4>
+            <div style="font-size:13px; opacity:0.85">Precio por pan</div>
+            <div class="resultado-valor" style="font-size:24px">$3.500</div>
+            <div style="font-size:13px; opacity:0.85; margin-top:14px">Punto de equilibrio</div>
+            <div class="resultado-valor">2.500 panes</div>
+            <p>Necesitas vender 2.500 panes al mes (unos 84 al día) para empezar a generar ganancias.</p>
+            <button class="btn-caso-cargar" data-cargar="panaderia">⚡ Cargar este ejemplo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASO AVÍCOLA (producción de huevos) -->
+      <div class="caso-contenido oculto" data-caso="avicola">
+        <div style="background:var(--verde-50); border:1px solid var(--verde-300); border-radius:var(--radio); padding:14px 18px; margin-bottom:20px; font-size:14px; color:var(--verde-900);">
+          <strong>📍 Contexto regional:</strong> Santander es uno de los principales departamentos productores de huevos en Colombia. Este caso modela una avícola pequeña con unas 700 gallinas ponedoras.
+        </div>
+        <div class="caso-practico-grid">
+          <div class="caso-col">
+            <h4>💰 Costos Fijos (mes)</h4>
+            <ul>
+              <li><span>Arriendo / galpón</span><span>$1.200.000</span></li>
+              <li><span>Salario operario</span><span>$1.500.000</span></li>
+              <li><span>Servicios públicos</span><span>$300.000</span></li>
+              <li><span>Veterinario y vacunas</span><span>$300.000</span></li>
+              <li><span>Mantenimiento</span><span>$200.000</span></li>
+              <li class="total"><span>TOTAL</span><span>$3.500.000</span></li>
+            </ul>
+          </div>
+          <div class="caso-col">
+            <h4>📦 Costo por huevo</h4>
+            <ul>
+              <li><span>Concentrado (alimento)</span><span>$290</span></li>
+              <li><span>Empaque (cubetas)</span><span>$30</span></li>
+              <li><span>Distribución</span><span>$30</span></li>
+              <li><span>Energía variable</span><span>$15</span></li>
+              <li><span>Otros</span><span>$15</span></li>
+              <li class="total"><span>TOTAL POR HUEVO</span><span>$380</span></li>
+            </ul>
+          </div>
+          <div class="caso-col resultado">
+            <h4>🎯 Resultado</h4>
+            <div style="font-size:13px; opacity:0.85">Precio por huevo</div>
+            <div class="resultado-valor" style="font-size:24px">$580</div>
+            <div style="font-size:13px; opacity:0.85; margin-top:14px">Punto de equilibrio</div>
+            <div class="resultado-valor">17.500 huevos</div>
+            <p>Equivale a vender ~584 huevos al día. Con 700 gallinas (25 huevos/mes c/u) estarías justo en equilibrio. Más gallinas = ganancias.</p>
+            <button class="btn-caso-cargar" data-cargar="avicola">⚡ Cargar este ejemplo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASO CUAJADA ARTESANAL -->
+      <div class="caso-contenido oculto" data-caso="cuajada">
+        <div style="background:var(--verde-50); border:1px solid var(--verde-300); border-radius:var(--radio); padding:14px 18px; margin-bottom:20px; font-size:14px; color:var(--verde-900); line-height:1.55;">
+          <strong>📍 Contexto rural:</strong> La cuajada (queso fresco artesanal) es producto típico de las fincas de Santander, Boyacá y Cundinamarca. Este caso modela un productor pequeño que vende directamente al consumidor en plaza o por encargo.<br>
+          <strong style="display:inline-block; margin-top:6px;">💡 Sobre el precio de la leche:</strong> referenciado en <strong>$1.800/L</strong> con base en el boletín mensual del DANE-SIPSA para Santander (2025). El valor exacto en tu zona puede variar entre $1.310 y $2.200/L según municipio. Consulta el dato oficial actualizado en <a href="https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/boletin-mensual-precios-de-leche-cruda-en-finca" target="_blank" rel="noopener" style="color:#1e40af; font-weight:600;">DANE — Precios de leche cruda en finca</a>.
+        </div>
+        <div class="caso-practico-grid">
+          <div class="caso-col">
+            <h4>💰 Costos Fijos (mes)</h4>
+            <ul>
+              <li><span>Depreciación equipos</span><span>$300.000</span></li>
+              <li><span>Mantenimiento finca</span><span>$200.000</span></li>
+              <li><span>Servicios públicos</span><span>$200.000</span></li>
+              <li><span>Transporte semanal</span><span>$300.000</span></li>
+              <li class="total"><span>TOTAL</span><span>$1.000.000</span></li>
+            </ul>
+          </div>
+          <div class="caso-col">
+            <h4>🧀 Costo por kilo</h4>
+            <ul>
+              <li><span>Leche (7 L × $1.800)</span><span>$12.600</span></li>
+              <li><span>Cuajo y sal</span><span>$200</span></li>
+              <li><span>Empaque</span><span>$200</span></li>
+              <li><span>Energía (gas/leña)</span><span>$250</span></li>
+              <li><span>Mano de obra directa</span><span>$200</span></li>
+              <li class="total"><span>TOTAL POR KILO</span><span>$13.450</span></li>
+            </ul>
+          </div>
+          <div class="caso-col resultado">
+            <h4>🎯 Resultado</h4>
+            <div style="font-size:13px; opacity:0.85">Precio por kilo</div>
+            <div class="resultado-valor" style="font-size:24px">$20.000</div>
+            <div style="font-size:13px; opacity:0.85; margin-top:14px">Punto de equilibrio</div>
+            <div class="resultado-valor">153 kilos</div>
+            <p>Equivale a producir ~5 kilos al día. Por encima de ese punto, cada kilo te deja $6.550 de ganancia limpia.</p>
+            <button class="btn-caso-cargar" data-cargar="cuajada">⚡ Cargar este ejemplo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="contenedor">
+    <p class="firma">Ing. Gustavo Walteros Larrotta</p>
+    <p>© 2025 · Creado con <span class="corazon">♥</span> para la Comunidad de Santa Bárbara, Santander, Colombia</p>
+    <p style="margin-top:8px; font-size:13px">Versión web monolítica · Difunde esta herramienta libremente</p>
+    <p style="margin-top:20px; padding-top:18px; border-top:1px solid var(--borde); font-size:12px; color:var(--texto-claro); max-width:780px; margin-left:auto; margin-right:auto; line-height:1.6;">
+      <strong style="color:var(--texto-suave);">Aviso sobre los datos:</strong> los valores presentados en los ejemplos y casos prácticos son únicamente <em>orientativos</em> con fines educativos. Los precios referenciados se basan en información del <strong>DANE — Sistema de Información de Precios y Abastecimiento del Sector Agropecuario (SIPSA)</strong> y pueden variar según municipio, temporada y proveedor. Esta herramienta no constituye asesoría financiera y los resultados dependen de la calidad de los datos que cada usuario ingrese. Consulta cifras oficiales en <a href="https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa" target="_blank" rel="noopener" style="color:var(--verde-700); font-weight:600;">dane.gov.co/SIPSA</a>.
+    </p>
+  </div>
+</footer>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   ESTADO Y CONFIGURACIÓN
+   ========================================================= */
+const CATEGORIAS_FIJOS = [
+  { emoji: '🏢', nombre: 'Arriendo / Local',         id: 'arriendo'   },
+  { emoji: '👥', nombre: 'Salarios fijos',           id: 'salarios'   },
+  { emoji: '💡', nombre: 'Servicios públicos',       id: 'servicios'  },
+  { emoji: '🛡️', nombre: 'Seguros',                  id: 'seguros'    },
+  { emoji: '📄', nombre: 'Licencias e impuestos',    id: 'licencias'  },
+  { emoji: '🔧', nombre: 'Depreciación / Equipos',   id: 'depreciacion'},
+  { emoji: '📊', nombre: 'Otros gastos fijos',       id: 'otros_fijos'}
+];
+
+const CATEGORIAS_VARIABLES = [
+  { emoji: '🥖', nombre: 'Materias primas',          id: 'materias'   },
+  { emoji: '👷', nombre: 'Mano de obra directa',     id: 'mano_obra'  },
+  { emoji: '📦', nombre: 'Empaque',                  id: 'empaque'    },
+  { emoji: '🚚', nombre: 'Distribución / Transporte',id: 'distribucion'},
+  { emoji: '⚡', nombre: 'Energía variable',          id: 'energia_var'},
+  { emoji: '💼', nombre: 'Comisiones por venta',     id: 'comisiones' },
+  { emoji: '🔧', nombre: 'Otros variables',          id: 'otros_var'  }
+];
+
+const estado = {
+  costosFijos: {},      // { id: { emoji, nombre, valor } }
+  costosVariables: {},
+  precio: 0,
+  grafico: null
+};
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const formatoCOP = new Intl.NumberFormat('es-CO', { 
+  style: 'currency', 
+  currency: 'COP',
+  maximumFractionDigits: 0
+});
+
+const formatoCOPDecimal = new Intl.NumberFormat('es-CO', { 
+  style: 'currency', 
+  currency: 'COP',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const formatoNum = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
+const formatoNumDec = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
+
+function moneda(n) {
+  if (!isFinite(n)) return '$ 0';
+  // Si tiene decimales significativos, los muestra
+  const tieneDecimales = Math.abs(n - Math.round(n)) > 0.005;
+  return tieneDecimales ? formatoCOPDecimal.format(n) : formatoCOP.format(Math.round(n));
+}
+
+function numero(n) {
+  if (!isFinite(n)) return '0';
+  return formatoNum.format(Math.round(n));
+}
+
+// Para unidades del PUNTO DE EQUILIBRIO se usa techo (ceil), no redondeo.
+// Razón económica: si el cálculo da 333,33 unidades, vender 333 todavía deja pérdida.
+// Para REALMENTE cubrir costos hay que vender al menos 334.
+function unidadesPE(n) {
+  if (!isFinite(n) || n <= 0) return '0';
+  return formatoNum.format(Math.ceil(n));
+}
+
+// Parsea entrada del usuario con manejo robusto de formatos numéricos.
+// Reconoce: enteros, separadores de miles (. o ,), decimales (, latino o . anglo).
+// Casos manejados correctamente:
+//   "1500"         -> 1500
+//   "1.500"        -> 1500   (punto = miles, latino)
+//   "1.500.000"    -> 1500000
+//   "1.500,50"     -> 1500.5 (formato latino con decimal)
+//   "1500.50"      -> 1500.5 (decimal anglo: 1 punto y 2 dígitos al final)
+//   "1500,50"      -> 1500.5 (decimal latino simple)
+//   "1,500"        -> 1500   (1 coma y 3 dígitos al final = miles anglo)
+function parsearNumero(str) {
+  if (str === null || str === undefined) return 0;
+  let s = String(str).trim();
+  if (!s) return 0;
+  
+  // Conserva solo dígitos, puntos, comas y signo negativo
+  s = s.replace(/[^\d.,\-]/g, '');
+  if (!s) return 0;
+  
+  const ultimaComa = s.lastIndexOf(',');
+  const ultimoPunto = s.lastIndexOf('.');
+  const cantPuntos = (s.match(/\./g) || []).length;
+  const cantComas = (s.match(/,/g) || []).length;
+  
+  let separadorDecimal = null; // null = no hay, ',' o '.'
+  
+  if (ultimaComa > -1 && ultimoPunto > -1) {
+    // Ambos separadores presentes: el último que aparece es el decimal
+    separadorDecimal = ultimaComa > ultimoPunto ? ',' : '.';
+  } else if (ultimaComa > -1) {
+    // Solo coma. Si hay UNA sola coma y tras ella hay 1-2 dígitos => decimal.
+    // Si hay UNA coma con 3 dígitos detrás (estilo "1,500") => miles anglo.
+    // Si hay varias comas => miles (estilo "1,500,000")
+    const trasComa = s.length - ultimaComa - 1;
+    if (cantComas === 1 && (trasComa === 1 || trasComa === 2)) {
+      separadorDecimal = ',';
+    }
+  } else if (ultimoPunto > -1) {
+    // Solo punto. Mismo razonamiento simétrico.
+    const trasPunto = s.length - ultimoPunto - 1;
+    if (cantPuntos === 1 && (trasPunto === 1 || trasPunto === 2)) {
+      separadorDecimal = '.';
+    }
+  }
+  
+  if (separadorDecimal) {
+    const idx = (separadorDecimal === ',') ? ultimaComa : ultimoPunto;
+    const parteEntera = s.slice(0, idx).replace(/[.,]/g, '');
+    const parteDecimal = s.slice(idx + 1).replace(/[.,]/g, '');
+    s = (parteEntera || '0') + '.' + parteDecimal;
+  } else {
+    s = s.replace(/[.,]/g, '');
+  }
+  
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// Formatea input mientras escribe (separadores de miles) preservando decimales en progreso
+function formatearMientrasEscribe(input) {
+  const valor = input.value;
+  
+  // Si el usuario está escribiendo un decimal y aún no termina (termina en , o .),
+  // no reformatear todavía para no interrumpirlo
+  if (valor.endsWith(',') || valor.endsWith('.')) return;
+  
+  const cursor = input.selectionStart;
+  const n = parsearNumero(valor);
+  if (n === 0 && valor.replace(/[^\d]/g, '') === '') {
+    return; // input vacío o solo separadores
+  }
+  
+  const tieneDecimales = Math.abs(n - Math.round(n)) > 0.005;
+  const formateado = tieneDecimales ? formatoNumDec.format(n) : (n > 0 ? formatoNum.format(n) : '');
+  
+  const diff = formateado.length - valor.length;
+  input.value = formateado;
+  const nuevoCursor = Math.max(0, cursor + diff);
+  try { input.setSelectionRange(nuevoCursor, nuevoCursor); } catch(e) {}
+}
+
+function mostrarToast(mensaje, tipo = '') {
+  const t = document.getElementById('toast');
+  t.textContent = mensaje;
+  t.className = 'toast mostrar ' + tipo;
+  setTimeout(() => t.classList.remove('mostrar'), 2800);
+}
+
+function animarBadge(el) {
+  el.classList.remove('actualizado');
+  void el.offsetWidth; // forzar reflow
+  el.classList.add('actualizado');
+}
+
+/* =========================================================
+   RENDER DE LISTAS
+   ========================================================= */
+function renderListaCostos(categorias, costos, contenedor, tipo) {
+  contenedor.innerHTML = '';
+  const todasCategorias = [...categorias];
+  // Agregar categorías custom que existan en estado
+  Object.keys(costos).forEach(id => {
+    if (!todasCategorias.find(c => c.id === id)) {
+      todasCategorias.push({ 
+        emoji: costos[id].emoji || '✏️', 
+        nombre: costos[id].nombre, 
+        id: id,
+        custom: true
+      });
+    }
+  });
+
+  todasCategorias.forEach(cat => {
+    const valorActual = costos[cat.id]?.valor || 0;
+    const fila = document.createElement('div');
+    fila.className = 'fila-costo' + (valorActual > 0 ? ' con-valor' : '');
+    fila.innerHTML = `
+      <div class="fila-costo-info">
+        <span class="emoji">${cat.emoji}</span>
+        <span>${cat.nombre}</span>
+      </div>
+      <div class="input-monto">
+        <input type="text" inputmode="decimal" placeholder="0" 
+               value="${valorActual > 0 ? formatoNum.format(valorActual) : ''}" 
+               data-id="${cat.id}" data-tipo="${tipo}" />
+      </div>
+      <button class="btn-eliminar" title="Eliminar" data-borrar="${cat.id}" data-tipo="${tipo}">✕</button>
+    `;
+    contenedor.appendChild(fila);
+  });
+
+  // Listeners de los inputs
+  contenedor.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      formatearMientrasEscribe(e.target);
+      const id = e.target.dataset.id;
+      const tipo = e.target.dataset.tipo;
+      const valor = parsearNumero(e.target.value);
+      actualizarCosto(tipo, id, valor);
+    });
+  });
+
+  // Listeners de los botones eliminar
+  contenedor.querySelectorAll('[data-borrar]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.borrar;
+      const tipo = e.currentTarget.dataset.tipo;
+      eliminarCosto(tipo, id);
+    });
+  });
+}
+
+function actualizarCosto(tipo, id, valor) {
+  const obj = tipo === 'fijo' ? estado.costosFijos : estado.costosVariables;
+  const categorias = tipo === 'fijo' ? CATEGORIAS_FIJOS : CATEGORIAS_VARIABLES;
+  
+  if (valor > 0) {
+    const cat = categorias.find(c => c.id === id) || obj[id] || { emoji: '✏️', nombre: id };
+    obj[id] = { emoji: cat.emoji, nombre: cat.nombre, valor };
+  } else {
+    delete obj[id];
+  }
+  
+  // Actualizar UI sin re-render completo
+  const fila = document.querySelector(`input[data-id="${id}"][data-tipo="${tipo}"]`)?.closest('.fila-costo');
+  if (fila) fila.classList.toggle('con-valor', valor > 0);
+  
+  actualizarTotales();
+  actualizarStepper();
+}
+
+function eliminarCosto(tipo, id) {
+  const obj = tipo === 'fijo' ? estado.costosFijos : estado.costosVariables;
+  const categorias = tipo === 'fijo' ? CATEGORIAS_FIJOS : CATEGORIAS_VARIABLES;
+  const esBase = categorias.find(c => c.id === id);
+  
+  delete obj[id];
+  
+  if (esBase) {
+    // Solo limpiamos el input
+    const inp = document.querySelector(`input[data-id="${id}"][data-tipo="${tipo}"]`);
+    if (inp) inp.value = '';
+    const fila = inp?.closest('.fila-costo');
+    if (fila) fila.classList.remove('con-valor');
+  } else {
+    // Re-render para quitar la fila custom
+    if (tipo === 'fijo') {
+      renderListaCostos(CATEGORIAS_FIJOS, estado.costosFijos, document.getElementById('listaFijos'), 'fijo');
+    } else {
+      renderListaCostos(CATEGORIAS_VARIABLES, estado.costosVariables, document.getElementById('listaVariables'), 'variable');
+    }
+  }
+  
+  actualizarTotales();
+  actualizarStepper();
+}
+
+/* =========================================================
+   TOTALES Y STEPPER
+   ========================================================= */
+function totalFijos() {
+  return Object.values(estado.costosFijos).reduce((s, c) => s + c.valor, 0);
+}
+function totalVariables() {
+  return Object.values(estado.costosVariables).reduce((s, c) => s + c.valor, 0);
+}
+
+function actualizarTotales() {
+  const tF = totalFijos();
+  const tV = totalVariables();
+  const elF = document.getElementById('totalFijos');
+  const elV = document.getElementById('totalVariables');
+  
+  if (elF.textContent !== moneda(tF)) {
+    elF.textContent = moneda(tF);
+    if (tF > 0) animarBadge(elF);
+  }
+  if (elV.textContent !== moneda(tV)) {
+    elV.textContent = moneda(tV);
+    if (tV > 0) animarBadge(elV);
+  }
+}
+
+function actualizarStepper() {
+  const tF = totalFijos();
+  const tV = totalVariables();
+  const tP = estado.precio;
+  
+  const paso1 = document.getElementById('paso1');
+  const paso2 = document.getElementById('paso2');
+  const paso3 = document.getElementById('paso3');
+  const linea1 = document.getElementById('linea1');
+  const linea2 = document.getElementById('linea2');
+  
+  // Paso 1
+  if (tF > 0) {
+    paso1.classList.add('completado');
+    paso1.classList.remove('activo');
+    linea1.classList.add('activa');
+    if (tV === 0) paso2.classList.add('activo');
+  } else {
+    paso1.classList.remove('completado');
+    paso1.classList.add('activo');
+    linea1.classList.remove('activa');
+  }
+  
+  // Paso 2
+  if (tV > 0) {
+    paso2.classList.add('completado');
+    paso2.classList.remove('activo');
+    linea2.classList.add('activa');
+    if (tP === 0) paso3.classList.add('activo');
+  } else {
+    paso2.classList.remove('completado');
+    if (tF > 0) paso2.classList.add('activo');
+  }
+  
+  // Paso 3
+  if (tP > 0 && tF > 0 && tV > 0) {
+    paso3.classList.add('completado');
+    paso3.classList.remove('activo');
+  } else {
+    paso3.classList.remove('completado');
+  }
+}
+
+/* =========================================================
+   FORMULARIO CUSTOM
+   ========================================================= */
+function setupFormulariosCustom() {
+  // Fijos
+  document.getElementById('btnAgregarFijo').addEventListener('click', () => {
+    const form = document.getElementById('formFijo');
+    form.style.display = form.style.display === 'none' ? 'grid' : 'none';
+    if (form.style.display === 'grid') document.getElementById('nuevoFijoNombre').focus();
+  });
+  
+  document.getElementById('nuevoFijoValor').addEventListener('input', (e) => formatearMientrasEscribe(e.target));
+  
+  document.getElementById('confirmarFijo').addEventListener('click', () => {
+    const nombre = document.getElementById('nuevoFijoNombre').value.trim();
+    const valor = parsearNumero(document.getElementById('nuevoFijoValor').value);
+    if (!nombre || valor <= 0) { mostrarToast('Completa nombre y valor', 'advertencia'); return; }
+    
+    const id = 'custom_' + Date.now();
+    estado.costosFijos[id] = { emoji: '✏️', nombre, valor };
+    document.getElementById('nuevoFijoNombre').value = '';
+    document.getElementById('nuevoFijoValor').value = '';
+    document.getElementById('formFijo').style.display = 'none';
+    renderListaCostos(CATEGORIAS_FIJOS, estado.costosFijos, document.getElementById('listaFijos'), 'fijo');
+    actualizarTotales();
+    actualizarStepper();
+    mostrarToast('✓ Costo fijo agregado', 'exito');
+  });
+  
+  // Variables
+  document.getElementById('btnAgregarVar').addEventListener('click', () => {
+    const form = document.getElementById('formVar');
+    form.style.display = form.style.display === 'none' ? 'grid' : 'none';
+    if (form.style.display === 'grid') document.getElementById('nuevoVarNombre').focus();
+  });
+  
+  document.getElementById('nuevoVarValor').addEventListener('input', (e) => formatearMientrasEscribe(e.target));
+  
+  document.getElementById('confirmarVar').addEventListener('click', () => {
+    const nombre = document.getElementById('nuevoVarNombre').value.trim();
+    const valor = parsearNumero(document.getElementById('nuevoVarValor').value);
+    if (!nombre || valor <= 0) { mostrarToast('Completa nombre y valor', 'advertencia'); return; }
+    
+    const id = 'custom_' + Date.now();
+    estado.costosVariables[id] = { emoji: '✏️', nombre, valor };
+    document.getElementById('nuevoVarNombre').value = '';
+    document.getElementById('nuevoVarValor').value = '';
+    document.getElementById('formVar').style.display = 'none';
+    renderListaCostos(CATEGORIAS_VARIABLES, estado.costosVariables, document.getElementById('listaVariables'), 'variable');
+    actualizarTotales();
+    actualizarStepper();
+    mostrarToast('✓ Costo variable agregado', 'exito');
+  });
+}
+
+/* =========================================================
+   PRECIO
+   ========================================================= */
+document.getElementById('inputPrecio').addEventListener('input', (e) => {
+  formatearMientrasEscribe(e.target);
+  estado.precio = parsearNumero(e.target.value);
+  actualizarStepper();
+});
+
+/* =========================================================
+   CÁLCULOS DEL PUNTO DE EQUILIBRIO
+   ========================================================= */
+function calcularPunto() {
+  const tF = totalFijos();
+  const tV = totalVariables();
+  const p = estado.precio;
+  
+  // Validaciones
+  if (tF === 0) {
+    mostrarToast('Agrega al menos un costo fijo', 'advertencia');
+    document.getElementById('cardFijos').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (tV === 0) {
+    mostrarToast('Agrega al menos un costo variable', 'advertencia');
+    document.getElementById('cardVariables').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  if (p === 0) {
+    mostrarToast('Ingresa el precio de venta', 'advertencia');
+    document.getElementById('inputPrecio').focus();
+    return;
+  }
+  if (p <= tV) {
+    mostrarToast('⚠️ El precio debe ser mayor al costo variable por unidad', 'error');
+    return;
+  }
+  
+  const margenContrib = p - tV;
+  const unidades = tF / margenContrib;
+  const dinero = unidades * p;
+  const margenPct = (margenContrib / p) * 100;
+  
+  // Mostrar resultados
+  const seccion = document.getElementById('resultados');
+  seccion.classList.remove('oculto');
+  seccion.classList.remove('aparecer');
+  void seccion.offsetWidth;
+  seccion.classList.add('aparecer');
+  
+  // Animar contadores. Para unidades del PE usamos Math.ceil porque vender el redondeo
+  // sigue dejando una mini pérdida; económicamente hay que vender AL MENOS ese entero.
+  const unidadesPECeil = Math.ceil(unidades);
+  const dineroPEAjustado = unidadesPECeil * p;
+  animarContador(document.getElementById('metricaUnidades'), 0, unidadesPECeil, 1200, v => numero(v));
+  animarContador(document.getElementById('metricaDinero'), 0, dineroPEAjustado, 1200, v => moneda(v));
+  animarContador(document.getElementById('metricaMargen'), 0, margenContrib, 1000, v => moneda(v));
+  animarContador(document.getElementById('metricaMargenPct'), 0, margenPct, 1000, v => v.toFixed(1) + '%');
+  
+  // Interpretación
+  renderInterpretacion(unidades, dinero, margenContrib, margenPct, p);
+  
+  // Gráfico
+  setTimeout(() => dibujarGrafico(unidades, dinero, p, tV, tF), 200);
+  
+  // Scroll
+  setTimeout(() => seccion.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  
+  // Confetti
+  lanzarConfetti();
+  
+  actualizarStepper();
+}
+
+function animarContador(el, desde, hasta, duracion, formateador) {
+  const inicio = performance.now();
+  function frame(ahora) {
+    const t = Math.min((ahora - inicio) / duracion, 1);
+    // ease-out cubic
+    const eased = 1 - Math.pow(1 - t, 3);
+    const valor = desde + (hasta - desde) * eased;
+    el.textContent = formateador(valor);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function renderInterpretacion(unidades, dinero, margen, margenPct, precio) {
+  const cont = document.getElementById('interpretacionPuntos');
+  const uPE = Math.ceil(unidades);          // unidades reales necesarias
+  const uPEdiario = Math.ceil(unidades / 30); // ventas diarias mínimas
+  const dineroPE = uPE * precio;             // dinero ajustado al ceil
+  
+  cont.innerHTML = `
+    <div class="punto-interpretacion">
+      <span class="icono">🎯</span>
+      <div>Necesitas vender <strong>al menos ${formatoNum.format(uPE)} unidades</strong> al mes (equivalente a <strong>${moneda(dineroPE)}</strong> en ventas) para cubrir todos tus costos.</div>
+    </div>
+    <div class="punto-interpretacion perdida">
+      <span class="icono">🔴</span>
+      <div>Si vendes <strong>menos de ${formatoNum.format(uPE)}</strong> unidades → estás <strong>perdiendo dinero</strong>.</div>
+    </div>
+    <div class="punto-interpretacion ganancia">
+      <span class="icono">🟢</span>
+      <div>Por cada unidad que vendas <strong>por encima de ${formatoNum.format(uPE)}</strong> → ganas <strong>${moneda(margen)}</strong> de utilidad.</div>
+    </div>
+    <div class="punto-interpretacion">
+      <span class="icono">💡</span>
+      <div>Tu margen de contribución del <strong>${margenPct.toFixed(1)}%</strong> significa que de cada <strong>${moneda(precio)}</strong> que vendes, <strong>${moneda(margen)}</strong> sirven para pagar costos fijos y generar ganancia.</div>
+    </div>
+    <div class="punto-interpretacion">
+      <span class="icono">📅</span>
+      <div>Eso equivale a vender al menos <strong>${formatoNum.format(uPEdiario)} unidades por día</strong> (asumiendo 30 días de trabajo al mes).</div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   GRÁFICO CHART.JS
+   ========================================================= */
+function dibujarGrafico(pUnidades, pDinero, precio, cvUnidad, cFijos) {
+  const ctx = document.getElementById('grafico');
+  if (estado.grafico) estado.grafico.destroy();
+  
+  const maxX = Math.max(Math.ceil(pUnidades * 2), 10);
+  const pasos = 50;
+  const labels = [];
+  const ingresos = [];
+  const costos = [];
+  const fijosLinea = [];
+  
+  for (let i = 0; i <= pasos; i++) {
+    const x = Math.round((maxX / pasos) * i);
+    labels.push(x);
+    ingresos.push(precio * x);
+    costos.push(cFijos + cvUnidad * x);
+    fijosLinea.push(cFijos);
+  }
+  
+  const esOscuro = document.body.dataset.tema === 'oscuro';
+  const colorTexto = esOscuro ? '#a8a29e' : '#57534e';
+  const colorGrid = esOscuro ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  
+  estado.grafico = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: ingresos,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: 'origin',
+          tension: 0.1,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          borderWidth: 3
+        },
+        {
+          label: 'Costos totales',
+          data: costos,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          fill: false,
+          tension: 0.1,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          borderWidth: 3
+        },
+        {
+          label: 'Costos fijos',
+          data: fijosLinea,
+          borderColor: '#94a3b8',
+          borderDash: [4, 4],
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 1.5
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1400, easing: 'easeOutCubic' },
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: esOscuro ? '#1c1917' : '#1c1917',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: '700' },
+          bodyFont: { family: 'JetBrains Mono', size: 12 },
+          callbacks: {
+            title: (items) => `${numero(items[0].parsed.x)} unidades`,
+            label: (item) => `${item.dataset.label}: ${moneda(item.parsed.y)}`
+          }
+        },
+        annotation: {} // placeholder
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'Unidades vendidas', color: colorTexto, font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' } },
+          grid: { color: colorGrid },
+          ticks: { color: colorTexto, callback: (v) => numero(v) }
+        },
+        y: {
+          title: { display: true, text: 'Pesos colombianos', color: colorTexto, font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' } },
+          grid: { color: colorGrid },
+          ticks: { color: colorTexto, callback: (v) => moneda(v) }
+        }
+      }
+    },
+    plugins: [{
+      // Plugin custom para marcar el punto de equilibrio
+      id: 'puntoEquilibrio',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        if (!scales.x || !scales.y) return;
+        const xPos = scales.x.getPixelForValue(pUnidades);
+        const yPos = scales.y.getPixelForValue(pDinero);
+        
+        // Línea vertical
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(xPos, chartArea.top);
+        ctx.lineTo(xPos, chartArea.bottom);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Círculo en el punto
+        ctx.beginPath();
+        ctx.arc(xPos, yPos, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        
+        // Etiqueta
+        const txt1 = `PE: ${numero(pUnidades)} unidades`;
+        const txt2 = moneda(pDinero);
+        ctx.font = 'bold 12px Plus Jakarta Sans';
+        const w1 = ctx.measureText(txt1).width;
+        const w2 = ctx.measureText(txt2).width;
+        const w = Math.max(w1, w2) + 20;
+        const h = 44;
+        let lx = xPos + 14;
+        let ly = yPos - h - 8;
+        if (lx + w > chartArea.right) lx = xPos - w - 14;
+        if (ly < chartArea.top) ly = yPos + 14;
+        
+        ctx.fillStyle = '#1c1917';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(lx, ly, w, h, 8);
+        else ctx.rect(lx, ly, w, h);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 12px Plus Jakarta Sans';
+        ctx.fillText(txt1, lx + 10, ly + 18);
+        ctx.fillStyle = '#fff';
+        ctx.font = '11px JetBrains Mono';
+        ctx.fillText(txt2, lx + 10, ly + 34);
+        
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+/* =========================================================
+   SIMULADOR
+   ========================================================= */
+document.getElementById('inputSimulador').addEventListener('input', (e) => formatearMientrasEscribe(e.target));
+
+document.getElementById('btnSimular').addEventListener('click', () => {
+  const unidades = parsearNumero(document.getElementById('inputSimulador').value);
+  const res = document.getElementById('resultadoSim');
+  
+  const tF = totalFijos();
+  const tV = totalVariables();
+  const p = estado.precio;
+  
+  if (tF === 0 || tV === 0 || p === 0 || p <= tV) {
+    res.className = 'simulador-resultado mostrar perdida';
+    res.innerHTML = '⚠️ Primero completa el cálculo del punto de equilibrio';
+    return;
+  }
+  if (unidades <= 0) {
+    res.className = 'simulador-resultado mostrar perdida';
+    res.innerHTML = '⚠️ Ingresa una cantidad válida de unidades';
+    return;
+  }
+  
+  const ingresos = unidades * p;
+  const costosTot = tF + (unidades * tV);
+  const gananciaPerdida = ingresos - costosTot;
+  
+  if (gananciaPerdida > 0) {
+    res.className = 'simulador-resultado mostrar ganancia';
+    res.innerHTML = `
+      <div>✅ <strong style="display:inline; font-size:inherit">¡GANARÍAS!</strong></div>
+      <strong>${moneda(gananciaPerdida)}</strong>
+      <div style="font-size:13px; opacity:0.85">Ingresos: ${moneda(ingresos)} − Costos: ${moneda(costosTot)}</div>
+    `;
+  } else if (gananciaPerdida < 0) {
+    res.className = 'simulador-resultado mostrar perdida';
+    res.innerHTML = `
+      <div>❌ <strong style="display:inline; font-size:inherit">PERDERÍAS</strong></div>
+      <strong>${moneda(Math.abs(gananciaPerdida))}</strong>
+      <div style="font-size:13px; opacity:0.85">Ingresos: ${moneda(ingresos)} − Costos: ${moneda(costosTot)}</div>
+    `;
+  } else {
+    res.className = 'simulador-resultado mostrar equilibrio';
+    res.innerHTML = `⚖️ <strong>EXACTAMENTE EN PUNTO DE EQUILIBRIO</strong> — Ni ganas ni pierdes`;
+  }
+});
+
+/* =========================================================
+   EXPORTACIÓN A EXCEL Y CSV
+   ========================================================= */
+
+// Construye una estructura común con todos los datos del análisis
+function construirDatosExportacion() {
+  const tF = totalFijos();
+  const tV = totalVariables();
+  const p = estado.precio;
+  const margen = p - tV;
+  const hayResultado = p > 0 && p > tV && tF > 0;
+  const unidadesExactas = hayResultado ? tF / margen : 0;
+  const unidadesNecesarias = hayResultado ? Math.ceil(unidadesExactas) : 0;
+  
+  return {
+    fecha: new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' }),
+    tF, tV, p, margen, hayResultado, unidadesExactas, unidadesNecesarias,
+    dineroPE: hayResultado ? unidadesNecesarias * p : 0,
+    margenPct: hayResultado ? (margen / p) * 100 : 0,
+    diariasMin: hayResultado ? Math.ceil(unidadesExactas / 30) : 0
+  };
+}
+
+document.getElementById('btnExportarExcel').addEventListener('click', () => {
+  if (totalFijos() === 0) { mostrarToast('No hay datos para exportar', 'advertencia'); return; }
+  
+  // Verificar que SheetJS esté disponible
+  if (typeof XLSX === 'undefined') {
+    mostrarToast('Excel no disponible sin internet, prueba con CSV', 'advertencia');
+    return;
+  }
+  
+  const d = construirDatosExportacion();
+  
+  // ===== HOJA 1: Resumen =====
+  const filasResumen = [
+    ['ANÁLISIS DE PUNTO DE EQUILIBRIO'],
+    [],
+    ['Fecha:', d.fecha],
+    ['Autor de la herramienta:', 'Ing. Gustavo Walteros Larrotta'],
+    ['Comunidad:', 'Santa Bárbara, Santander, Colombia'],
+    ['Moneda:', 'COP - Pesos colombianos'],
+    [],
+    ['1. RESUMEN DE TUS DATOS', ''],
+    ['Total costos fijos del mes:', d.tF],
+    ['Costo variable por unidad:', d.tV],
+    ['Precio de venta por unidad:', d.p],
+    []
+  ];
+  
+  if (d.hayResultado) {
+    filasResumen.push(
+      ['2. RESULTADOS DEL PUNTO DE EQUILIBRIO', ''],
+      ['Margen de contribución por unidad:', d.margen],
+      ['Margen de contribución porcentual:', `${d.margenPct.toFixed(2)}%`],
+      ['Punto de equilibrio (unidades exactas):', Number(d.unidadesExactas.toFixed(4))],
+      ['Unidades necesarias (techo):', d.unidadesNecesarias],
+      ['Equivalente en ventas:', d.dineroPE],
+      ['Ventas diarias mínimas (30 días):', d.diariasMin],
+      [],
+      ['NOTA:', 'Las unidades se redondean al entero superior. Vender menos deja pérdida.']
+    );
+  } else {
+    filasResumen.push(['(Faltan datos para calcular el punto de equilibrio)']);
+  }
+  
+  // Aviso sobre los datos (siempre presente)
+  filasResumen.push(
+    [],
+    ['AVISO SOBRE LOS DATOS', ''],
+    ['Los valores ingresados son responsabilidad del usuario.', ''],
+    ['Si usaste cifras de los ejemplos, son orientativas, no exactas.', ''],
+    ['Datos referenciales basados en: DANE-SIPSA', ''],
+    ['Fuente oficial:', 'https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa']
+  );
+  
+  const ws1 = XLSX.utils.aoa_to_sheet(filasResumen);
+  ws1['!cols'] = [{ wch: 40 }, { wch: 25 }];
+  // Estilos básicos (negrita para encabezados)
+  if (ws1['A1']) ws1['A1'].s = { font: { bold: true, sz: 14 } };
+  
+  // ===== HOJA 2: Costos Fijos =====
+  const filasFijos = [
+    ['COSTOS FIJOS DEL MES'],
+    [],
+    ['Concepto', 'Valor (COP)']
+  ];
+  Object.values(estado.costosFijos).forEach(c => {
+    filasFijos.push([c.nombre, c.valor]);
+  });
+  filasFijos.push([], ['TOTAL', d.tF]);
+  const ws2 = XLSX.utils.aoa_to_sheet(filasFijos);
+  ws2['!cols'] = [{ wch: 35 }, { wch: 18 }];
+  
+  // ===== HOJA 3: Costos Variables =====
+  const filasVariables = [
+    ['COSTOS VARIABLES POR UNIDAD'],
+    [],
+    ['Concepto', 'Valor por unidad (COP)']
+  ];
+  Object.values(estado.costosVariables).forEach(c => {
+    filasVariables.push([c.nombre, c.valor]);
+  });
+  filasVariables.push([], ['TOTAL POR UNIDAD', d.tV]);
+  const ws3 = XLSX.utils.aoa_to_sheet(filasVariables);
+  ws3['!cols'] = [{ wch: 35 }, { wch: 22 }];
+  
+  // ===== HOJA 4: Simulación de escenarios =====
+  let ws4;
+  if (d.hayResultado) {
+    const filasSim = [
+      ['SIMULACIÓN: GANANCIA SEGÚN UNIDADES VENDIDAS'],
+      [],
+      ['Unidades vendidas', 'Ingresos', 'Costos totales', 'Ganancia / Pérdida', 'Estado']
+    ];
+    // Generamos escenarios: 50%, 75%, 100%, 125%, 150%, 200% del PE
+    const factores = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    factores.forEach(f => {
+      const u = Math.round(d.unidadesNecesarias * f);
+      const ingresos = u * d.p;
+      const costos = d.tF + (u * d.tV);
+      const ganancia = ingresos - costos;
+      const situacion = ganancia > 0 ? 'GANANCIA' : ganancia < 0 ? 'PÉRDIDA' : 'EQUILIBRIO';
+      filasSim.push([u, ingresos, costos, ganancia, situacion]);
+    });
+    ws4 = XLSX.utils.aoa_to_sheet(filasSim);
+    ws4['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 20 }, { wch: 14 }];
+  }
+  
+  // Crear el libro y agregar las hojas
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Costos Fijos');
+  XLSX.utils.book_append_sheet(wb, ws3, 'Costos Variables');
+  if (ws4) XLSX.utils.book_append_sheet(wb, ws4, 'Simulación');
+  
+  const nombre = `punto_equilibrio_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, nombre);
+  mostrarToast('✓ Excel descargado', 'exito');
+});
+
+document.getElementById('btnExportarCSV').addEventListener('click', () => {
+  if (totalFijos() === 0) { mostrarToast('No hay datos para exportar', 'advertencia'); return; }
+  
+  const d = construirDatosExportacion();
+  
+  // Generar CSV con separador `;` (estándar latinoamericano, mejor compatibilidad con Excel en español)
+  const lineas = [];
+  const esc = (v) => {
+    const s = String(v ?? '');
+    return s.includes(';') || s.includes('"') || s.includes('\n') 
+      ? `"${s.replace(/"/g, '""')}"` 
+      : s;
+  };
+  const fila = (...campos) => lineas.push(campos.map(esc).join(';'));
+  
+  fila('ANÁLISIS DE PUNTO DE EQUILIBRIO');
+  fila('');
+  fila('Fecha', d.fecha);
+  fila('Autor de la herramienta', 'Ing. Gustavo Walteros Larrotta');
+  fila('Comunidad', 'Santa Bárbara, Santander, Colombia');
+  fila('Moneda', 'COP - Pesos colombianos');
+  fila('');
+  
+  fila('COSTOS FIJOS DEL MES');
+  fila('Concepto', 'Valor');
+  Object.values(estado.costosFijos).forEach(c => fila(c.nombre, c.valor));
+  fila('TOTAL', d.tF);
+  fila('');
+  
+  fila('COSTOS VARIABLES POR UNIDAD');
+  fila('Concepto', 'Valor por unidad');
+  Object.values(estado.costosVariables).forEach(c => fila(c.nombre, c.valor));
+  fila('TOTAL POR UNIDAD', d.tV);
+  fila('');
+  
+  fila('PRECIO DE VENTA POR UNIDAD', d.p);
+  fila('');
+  
+  if (d.hayResultado) {
+    fila('RESULTADOS');
+    fila('Margen de contribución por unidad', d.margen);
+    fila('Margen de contribución porcentual', `${d.margenPct.toFixed(2)}%`);
+    fila('Punto de equilibrio (unidades exactas)', d.unidadesExactas.toFixed(4));
+    fila('Unidades necesarias (techo)', d.unidadesNecesarias);
+    fila('Equivalente en ventas', d.dineroPE);
+    fila('Ventas diarias mínimas', d.diariasMin);
+  } else {
+    fila('(Faltan datos para calcular el punto de equilibrio)');
+  }
+  
+  fila('');
+  fila('AVISO SOBRE LOS DATOS');
+  fila('Los valores ingresados son responsabilidad del usuario.');
+  fila('Si usaste cifras de los ejemplos, son orientativas, no exactas.');
+  fila('Datos referenciales basados en DANE-SIPSA.');
+  fila('Fuente oficial', 'https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa');
+  
+  // BOM para que Excel reconozca UTF-8 correctamente
+  const contenido = '\uFEFF' + lineas.join('\n');
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `punto_equilibrio_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  mostrarToast('✓ CSV descargado (se abre en Excel)', 'exito');
+});
+
+/* =========================================================
+   IMPRIMIR
+   ========================================================= */
+document.getElementById('btnImprimir').addEventListener('click', () => {
+  window.print();
+});
+
+/* =========================================================
+   LIMPIAR TODO
+   ========================================================= */
+document.getElementById('btnLimpiar').addEventListener('click', () => {
+  if (!confirm('¿Seguro que quieres borrar todos los datos y empezar de nuevo?')) return;
+  
+  estado.costosFijos = {};
+  estado.costosVariables = {};
+  estado.precio = 0;
+  
+  document.getElementById('inputPrecio').value = '';
+  document.getElementById('inputSimulador').value = '';
+  document.getElementById('resultadoSim').className = 'simulador-resultado';
+  document.getElementById('resultados').classList.add('oculto');
+  
+  if (estado.grafico) { estado.grafico.destroy(); estado.grafico = null; }
+  
+  renderListaCostos(CATEGORIAS_FIJOS, estado.costosFijos, document.getElementById('listaFijos'), 'fijo');
+  renderListaCostos(CATEGORIAS_VARIABLES, estado.costosVariables, document.getElementById('listaVariables'), 'variable');
+  actualizarTotales();
+  actualizarStepper();
+  
+  mostrarToast('✓ Todo limpio, empieza de nuevo', 'exito');
+  document.getElementById('calculadora').scrollIntoView({ behavior: 'smooth' });
+});
+
+/* =========================================================
+   CASOS PRÁCTICOS (datos y carga)
+   ========================================================= */
+const CASOS_PRACTICOS = {
+  panaderia: {
+    nombre: 'panadería',
+    fijos: {
+      arriendo:     { emoji: '🏢', nombre: 'Arriendo / Local',    valor: 2500000 },
+      salarios:     { emoji: '👥', nombre: 'Salarios fijos',      valor: 1800000 },
+      servicios:    { emoji: '💡', nombre: 'Servicios públicos',  valor: 450000 },
+      seguros:      { emoji: '🛡️', nombre: 'Seguros',             valor: 200000 },
+      otros_fijos:  { emoji: '📊', nombre: 'Otros gastos fijos',  valor: 300000 }
+    },
+    variables: {
+      materias:    { emoji: '🥖', nombre: 'Materias primas',       valor: 650 },
+      mano_obra:   { emoji: '👷', nombre: 'Mano de obra directa',  valor: 300 },
+      empaque:     { emoji: '📦', nombre: 'Empaque',               valor: 200 },
+      energia_var: { emoji: '⚡', nombre: 'Energía variable',       valor: 150 },
+      otros_var:   { emoji: '🔧', nombre: 'Otros variables',       valor: 100 }
+    },
+    precio: 3500
+  },
+  avicola: {
+    nombre: 'avícola',
+    fijos: {
+      arriendo:     { emoji: '🏢', nombre: 'Arriendo / Galpón',    valor: 1200000 },
+      salarios:     { emoji: '👥', nombre: 'Salario operario',     valor: 1500000 },
+      servicios:    { emoji: '💡', nombre: 'Servicios públicos',   valor: 300000 },
+      seguros:      { emoji: '🛡️', nombre: 'Veterinario y vacunas',valor: 300000 },
+      otros_fijos:  { emoji: '🔧', nombre: 'Mantenimiento',        valor: 200000 }
+    },
+    variables: {
+      materias:     { emoji: '🌾', nombre: 'Concentrado (alimento)', valor: 290 },
+      empaque:      { emoji: '📦', nombre: 'Empaque (cubetas)',      valor: 30 },
+      distribucion: { emoji: '🚚', nombre: 'Distribución',           valor: 30 },
+      energia_var:  { emoji: '⚡', nombre: 'Energía variable',        valor: 15 },
+      otros_var:    { emoji: '🔧', nombre: 'Otros variables',        valor: 15 }
+    },
+    precio: 580
+  },
+  cuajada: {
+    nombre: 'cuajada artesanal',
+    fijos: {
+      arriendo:     { emoji: '🔧', nombre: 'Depreciación equipos', valor: 300000 },
+      salarios:     { emoji: '🏢', nombre: 'Mantenimiento finca',  valor: 200000 },
+      servicios:    { emoji: '💡', nombre: 'Servicios públicos',   valor: 200000 },
+      otros_fijos:  { emoji: '🚚', nombre: 'Transporte semanal',   valor: 300000 }
+    },
+    variables: {
+      materias:     { emoji: '🥛', nombre: 'Leche cruda (7 L)',     valor: 12600 },
+      mano_obra:    { emoji: '👷', nombre: 'Mano de obra directa',  valor: 200 },
+      empaque:      { emoji: '📦', nombre: 'Empaque',               valor: 200 },
+      energia_var:  { emoji: '🔥', nombre: 'Energía (gas/leña)',    valor: 250 },
+      otros_var:    { emoji: '🧂', nombre: 'Cuajo y sal',           valor: 200 }
+    },
+    precio: 20000
+  }
+};
+
+function cargarCaso(claveCaso) {
+  const caso = CASOS_PRACTICOS[claveCaso];
+  if (!caso) return;
+  
+  // Copia profunda para no contaminar los datos originales si el usuario edita
+  estado.costosFijos = JSON.parse(JSON.stringify(caso.fijos));
+  estado.costosVariables = JSON.parse(JSON.stringify(caso.variables));
+  estado.precio = caso.precio;
+  
+  document.getElementById('inputPrecio').value = formatoNum.format(caso.precio);
+  renderListaCostos(CATEGORIAS_FIJOS, estado.costosFijos, document.getElementById('listaFijos'), 'fijo');
+  renderListaCostos(CATEGORIAS_VARIABLES, estado.costosVariables, document.getElementById('listaVariables'), 'variable');
+  actualizarTotales();
+  actualizarStepper();
+  
+  mostrarToast(`✓ Ejemplo de ${caso.nombre} cargado`, 'exito');
+  document.getElementById('calculadora').scrollIntoView({ behavior: 'smooth' });
+  
+  setTimeout(() => calcularPunto(), 800);
+}
+
+// Listener para los botones de cargar caso
+document.querySelectorAll('[data-cargar]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    cargarCaso(e.currentTarget.dataset.cargar);
+  });
+});
+
+// Listener para el selector de pestañas de casos
+document.querySelectorAll('.caso-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    const casoSeleccionado = e.currentTarget.dataset.caso;
+    document.querySelectorAll('.caso-tab').forEach(t => t.classList.toggle('activo', t.dataset.caso === casoSeleccionado));
+    document.querySelectorAll('.caso-contenido').forEach(c => c.classList.toggle('oculto', c.dataset.caso !== casoSeleccionado));
+  });
+});
+
+/* =========================================================
+   BOTÓN CALCULAR
+   ========================================================= */
+document.getElementById('btnCalcular').addEventListener('click', calcularPunto);
+
+/* =========================================================
+   CONFETTI (celebración al calcular)
+   ========================================================= */
+function lanzarConfetti() {
+  const colores = ['#10b981', '#f59e0b', '#fbbf24', '#34d399', '#059669'];
+  const cantidad = 60;
+  
+  for (let i = 0; i < cantidad; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (Math.random() * 100) + 'vw';
+    c.style.top = '-20px';
+    c.style.background = colores[Math.floor(Math.random() * colores.length)];
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(c);
+    
+    const duracion = 2000 + Math.random() * 1500;
+    const xFinal = (Math.random() - 0.5) * 400;
+    const yFinal = window.innerHeight + 50;
+    const rotFinal = Math.random() * 720;
+    
+    c.animate([
+      { transform: c.style.transform, opacity: 1 },
+      { transform: `translate(${xFinal}px, ${yFinal}px) rotate(${rotFinal}deg)`, opacity: 0 }
+    ], { duration: duracion, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' }).onfinish = () => c.remove();
+  }
+}
+
+/* =========================================================
+   CAMBIO DE TEMA
+   ========================================================= */
+document.getElementById('btnTema').addEventListener('click', () => {
+  const actual = document.body.dataset.tema;
+  const nuevo = actual === 'claro' ? 'oscuro' : 'claro';
+  document.body.dataset.tema = nuevo;
+  document.getElementById('btnTema').textContent = nuevo === 'oscuro' ? '☀️' : '🌙';
+  
+  // Re-dibujar gráfico para que tome colores del nuevo tema
+  if (estado.grafico) {
+    const tF = totalFijos(); const tV = totalVariables(); const p = estado.precio;
+    if (p > tV) {
+      const margen = p - tV;
+      const u = tF / margen;
+      const d = u * p;
+      dibujarGrafico(u, d, p, tV, tF);
+    }
+  }
+});
+
+/* =========================================================
+   INICIALIZACIÓN
+   ========================================================= */
+function init() {
+  renderListaCostos(CATEGORIAS_FIJOS, estado.costosFijos, document.getElementById('listaFijos'), 'fijo');
+  renderListaCostos(CATEGORIAS_VARIABLES, estado.costosVariables, document.getElementById('listaVariables'), 'variable');
+  setupFormulariosCustom();
+  actualizarTotales();
+  actualizarStepper();
+}
+
+init();
+</script>
+</body>
+</html>
